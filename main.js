@@ -1,4 +1,31 @@
 (function() {
+
+// # Game data
+
+// image name
+var map = 'dk.jpg'
+// size of image 
+var norm = [1838, 1518]
+// locations to quiz
+locations = [
+    ['København', 1143, 894],
+    ['Køge', 1057, 997],
+    ['Odense', 597, 1116],
+    ['Ålborg', 488, 392],
+    ['Århus', 561, 760],
+    ['Herning', 250, 850],
+    ['Skagen', 629, 62],
+    ['Vejle', 403, 1013]
+];
+
+(function() {
+    for(var i = 0; i < locations.length; ++i) {
+        locations[i][1] /= norm[0];
+        locations[i][2] /= norm[1];
+    }
+})()
+
+// # var decls
 var cursorDown = false;
 var zoomedin = false;
 var zoomfactor = 5;
@@ -6,9 +33,27 @@ var prevx, prevy;
 var imposx, imposy;
 var mapDom;
 var imwidth, imheight, viewwidth, viewheight;
+var logosz;
 var clickx, clicky, clicktime;
 var namesize = Math.round($(window).width() / 8);
 var textsize = Math.round(namesize / 4);
+var count = 5;
+
+// # Location management
+
+function shuffle() {
+    var t, result = [];
+    while(locations.length > 0) {
+        i = Math.floor(Math.random() * locations.length);
+        result.push(locations[i]);
+        locations[i] = locations[locations.length - 1];
+        locations.pop();
+    }
+    locations = result;
+    console.log(locations);
+}
+
+// score management
 
 function imbounds() {
     if(imposx > 0) { imposx = 0; }
@@ -33,12 +78,14 @@ function downEvent(x,y) {
         imwidth = zoomfactor * viewwidth;
         imheight = zoomfactor * viewheight;
         imbounds();
-        $('#map').animate({ 
+        animate(
+        /*$('#map').animate({ 
             top: imposy,
             left: imposx,
             width: imwidth,
             height: imheight
-        }, function() { zoomedin = true });
+        }, */
+        function() { zoomedin = true });
         //$('#cityname').text(name).animate({ opacity: 0 });
         $('#cityname').animate({
             top: 0,
@@ -63,12 +110,13 @@ function upEvent(x,y) {
 
     // single click
     if(clickduration < 500 && movement < viewwidth / 10) {
-        zoomout("København");
+        zoomout(locations[1][0]);
     }
 
     console.log("upEvent " +  clickduration + ", " + movement);
 }
 
+var locationimgs;
 function moveEvent(x,y) {
     if(!cursorDown) return;
     console.log("moveEvent " +  x + ", " + y);
@@ -80,21 +128,49 @@ function moveEvent(x,y) {
     imbounds();
     mapDom.style.top = imposy + 'px';
     mapDom.style.left = imposx + 'px';
+    locationimgs = $("#locations")[0].children;
+    for(var i = count - 1; i; --i) {
+        locationimgs[i].style.left = (0|(locations[i][1] * imwidth + imposx - .5 * logosz)) + "px";
+        locationimgs[i].style.top = (0|(locations[i][2] * imheight + imposy- .5 * logosz)) + "px";
+    }
 }
 
+
+function animate(fn) {
+    $('#map').animate({ 
+        left: imposx, 
+        top: imposy, 
+        width: imwidth, 
+        height: imheight
+    }, fn);
+    for(var i = 0; i < count; ++i) {
+        $("#loc" + i)
+            .attr("src", 'location.png')
+            .css("width", logosz)
+            .css("height", logosz)
+            .css('z-index', -1)
+            .css("position", 'fixed')
+            .animate({
+                "left": locations[i][1] * imwidth + imposx - .5 * logosz,
+                "top": locations[i][2] * imheight + imposy- .5 * logosz
+            });
+    }
+
+}
 
 function zoomout(name) {
 
     viewwidth = $(window).width();
     viewheight = $(window).height();
-    $('#map').animate({ 
-        top: 0, 
-        left: 0, 
-        width: $(window).width(), 
-        height: $(window).height() 
-    }, function() { zoomedin = false; });
+    imposy =  0;
+    imposx = 0;
+    imwidth = viewwidth;
+    imheight = viewheight;
+    logosz = Math.round(viewwidth/50);
+
+    animate(function() { zoomedin = false; });
     $('#cityname').text(name).animate({
-        top: Math.round(($(window).height()-$('#cityname').height())/2),
+        top: Math.round(viewheight/2 - namesize),
         'font-size': namesize,
         'width': $(window).width() - namesize
     }); 
@@ -124,10 +200,16 @@ function zoomout(name) {
 }
 
 function init() {
-    $('body').html('<img src="dk.jpg" id=map><div id="cityname"></div><div id="score">Score: 5</div>');
+    shuffle();
+    $('body').html('<img src="dk.jpg" id=map><div id="cityname"></div><div id="score">Cities: 5</div><div id="locations"></div>');
+    var locstr = '';
+    for(var i = 0; i < count; ++i) {
+        locstr += '<image id="loc' + i + '">'
+    }
+    $('#locations').html(locstr);
     $('#map').css('position', 'fixed')
              .css('user-select', 'none')
-             .css('z-index', -1)
+             .css('z-index', -2)
              .css('top', $(window).height()/2)
              .css('left', $(window).width()/2)
              .css('width', 0)

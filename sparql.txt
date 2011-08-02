@@ -1,0 +1,7 @@
+SELECT ?name ?lat ?long
+WHERE {
+   ?city rdfs:label ?name.
+   ?city geo:lat ?lat.
+   ?city geo:long ?long.
+   ?city dcterms:subject <http://dbpedia.org/resource/Category:Cities_and_towns_in_Denmark>.
+}

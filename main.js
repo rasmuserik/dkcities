@@ -17,7 +17,7 @@ locations = [
     ['Skagen', 629, 62],
     ['Vejle', 403, 1013]
 ];
-var zoomfactor = 5;
+var zoomfactor = 10;
 var scoretitle = "Byer: ";
 
 // normalise location position

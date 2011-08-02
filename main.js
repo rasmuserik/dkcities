@@ -18,6 +18,7 @@ locations = [
     ['Vejle', 403, 1013]
 ];
 var zoomfactor = 5;
+var scoretitle = "Byer: ";
 
 // normalise location position
 (function() {
@@ -28,6 +29,7 @@ var zoomfactor = 5;
 })()
 
 // # var decls
+var quizvalue = 0;
 var cursorDown = false;
 var zoomedin = false;
 var prevx, prevy;
@@ -37,8 +39,8 @@ var imwidth, imheight, viewwidth, viewheight;
 var logosz;
 var clickx, clicky, clicktime;
 var namesize = Math.round($(window).width() / 8);
-var textsize = Math.round(namesize / 4);
-var count = 8;
+var textsize = Math.round(namesize / 3);
+var count = 1;
 
 // # Location management
 
@@ -74,25 +76,7 @@ function downEvent(x,y) {
     clicktime = (new Date()).getTime();
 
     if(!zoomedin) {
-        imposy =  Math.round(viewheight / 2 - zoomfactor * y);
-        imposx = Math.round(viewwidth / 2 - zoomfactor * x);
-        imwidth = zoomfactor * viewwidth;
-        imheight = zoomfactor * viewheight;
-        imbounds();
-        logosz = Math.round(viewwidth/10);
-        animate(
-        /*$('#map').animate({ 
-            top: imposy,
-            left: imposx,
-            width: imwidth,
-            height: imheight
-        }, */
-        function() { zoomedin = true });
-        //$('#cityname').text(name).animate({ opacity: 0 });
-        $('#cityname').animate({
-            top: 0,
-            'font-size': textsize,
-        }); 
+        zoomin(x, y);
     } else {
         prevx = x;
         prevy = y;
@@ -140,16 +124,34 @@ function upEvent(x,y) {
 
     // single click
     if(clickduration < 500 && movement < viewwidth / 10) {
-        var ok = Math.random() < .5;
-        $('#cityname').css('color', ok?'#00ff00':'#ff0000');
-        
-        zoomout(function() { newCity(locations[1][0], ok)});
-    }
+        var result = nearest(
+            (prevx-imposx)/imwidth,
+            (prevy-imposy)/imheight);
 
+        ok = result === quizvalue;
+
+        count += ok ? 1 : -1;
+        if(count > locations.length) {
+            count = locations.length;
+        }
+
+        var newquiz = Math.floor(Math.random() * count);
+        while(ok && newquiz === quizvalue && count >= 2) {
+            newquiz = Math.floor(Math.random() * count);
+        }
+
+        $("#score").text(scoretitle + count);
+        quizvalue = newquiz;
+
+        $('#cityname').css('color', ok ? '#44aa44' : '#cc3333');
+        
+        zoomout(function() { newCity(locations[quizvalue][0], ok)});
+    }
     console.log("upEvent " +  clickduration + ", " + movement);
 }
 
 var locationimgs;
+
 function moveEvent(x,y) {
     if(!cursorDown) return;
     console.log("moveEvent " +  x + ", " + y);
@@ -162,12 +164,11 @@ function moveEvent(x,y) {
     mapDom.style.top = imposy + 'px';
     mapDom.style.left = imposx + 'px';
     locationimgs = $("#locations")[0].children;
-    for(var i = count - 1; i; --i) {
+    for(var i = 0; i < count; ++i) {
         locationimgs[i].style.left = (0|(locations[i][1] * imwidth + imposx - .5 * logosz)) + "px";
         locationimgs[i].style.top = (0|(locations[i][2] * imheight + imposy- .5 * logosz)) + "px";
     }
 }
-
 
 function animate(fn) {
     $('#map').animate({ 
@@ -188,7 +189,35 @@ function animate(fn) {
                 "top": locations[i][2] * imheight + imposy- .5 * logosz
             });
     }
+    $("#loc" + i).css("left", viewwidth);
+}
 
+function nearest(x, y) {
+    var dist = 100;
+    var result;
+    for(var i = 0; i < count; ++i) {
+        var loc = locations[i];
+        var dist2 = (loc[1] - x)*(loc[1] - x) + (loc[2] - y)*(loc[2] - y);
+        if(dist2 < dist) {
+            result = i;
+            dist = dist2;
+        }
+    }
+    return result;
+}
+
+function zoomin(x, y) {
+    imposy =  Math.round(viewheight / 2 - zoomfactor * y);
+    imposx = Math.round(viewwidth / 2 - zoomfactor * x);
+    imwidth = zoomfactor * viewwidth;
+    imheight = zoomfactor * viewheight;
+    imbounds();
+    logosz = Math.round(viewwidth/10);
+    animate( function() { zoomedin = true });
+    $('#cityname').animate({
+        top: 0,
+        'font-size': textsize,
+    }); 
 }
 
 function zoomout(fn) {
@@ -234,9 +263,9 @@ function zoomout(fn) {
 
 function init() {
     shuffle();
-    $('body').html('<img src="dk.jpg" id=map><div id="cityname"></div><div id="score">Cities: 5</div><div id="locations"></div>');
+    $('body').html('<img src="dk.jpg" id=map><div id="cityname"></div><div id="score"></div><div id="locations"></div>');
     var locstr = '';
-    for(var i = 0; i < count; ++i) {
+    for(var i = 0; i < 100; ++i) {
         locstr += '<image id="loc' + i + '">'
     }
     $('#locations').html(locstr);

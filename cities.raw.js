@@ -5,7 +5,7 @@ function f(x) {
     x.map(function(a) { 
         var name = a.name.value;
         name = name.replace(", Denmark", "");
-        y[name] = {lat: +a.lat.value, lng: +a['long'].value}
+        y[name] = {lng: +a['long'].value, lat: +a.lat.value}
     });
 
     console.log(y);

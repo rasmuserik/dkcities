@@ -3,11 +3,11 @@
 // # Game data
 
 // image name
-var map = 'dk.jpg'
+var map = 'denmark.jpg'
 // size of image 
-var norm = [1838, 1518]
+var norm = [1920, 960]
 // locations to quiz
-locations = [
+xlocations = [
     ['København', 1143, 894],
     ['Køge', 1057, 997],
     ['Odense', 597, 1116],
@@ -41,7 +41,6 @@ var clickx, clicky, clicktime;
 var namesize = Math.round($(window).width() / 8);
 var textsize = Math.round(namesize / 3);
 var count = 1;
-
 // # Location management
 
 function shuffle() {
@@ -263,9 +262,9 @@ function zoomout(fn) {
 
 function init() {
     shuffle();
-    $('body').html('<img src="dk.jpg" id=map><div id="cityname"></div><div id="score"></div><div id="locations"></div>');
+    $('body').html('<img src="denmark.jpg" id=map><div id="cityname"></div><div id="score"></div><div id="locations"></div>');
     var locstr = '';
-    for(var i = 0; i < 100; ++i) {
+    for(var i = 0; i < locations.length; ++i) {
         locstr += '<image id="loc' + i + '">'
     }
     $('#locations').html(locstr);

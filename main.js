@@ -9,8 +9,6 @@ var norm = [1920, 960]
 // locations to quiz
 locsrc = locations;
 var zoomfactor = 3;
-var scoretitle = "Byer: ";
-
 // normalise location position
 (function() {
     for(var i = 0; i < locations.length; ++i) {
@@ -34,10 +32,6 @@ var textsize = Math.round(namesize / 3);
 var count = 7;
 // # Location management
 
-function locDist(a, b) {
-    return Math.abs(a[1]-b[1]) + Math.abs(a[2]-b[2]);
-}
-
 function shuffle() {
     var i, j, result = [];
 
@@ -46,8 +40,7 @@ function shuffle() {
         var loc = locsrc[Math.floor(Math.random() * locsrc.length)];
         locations[i] = loc;
         for(j=0;j<i;++j) {
-            console.log("dist", locDist(loc, locations[j]));
-            if(locDist(loc, locations[j]) < 0.1) {
+            if( Math.abs(loc[1]-locations[j][1]) + Math.abs(loc[2]-locations[j][2]) < 0.1) {
                 j = --i;
             }
         }
@@ -100,12 +93,10 @@ function upEvent(x,y) {
     }
 }
 
-var corrects = [];
-var prev;
-
 function answer(ok, question) {
 
     corrects[question] = ok;
+    console.log("question", locations[question]);
     var allok = true;
     for(var i = 0; i < count; ++i) {
         allok = allok && corrects[i];
@@ -114,14 +105,13 @@ function answer(ok, question) {
         shuffle();
     }
     
+    do {
+        var newquiz = Math.floor(Math.random() * count);
+        if(corrects[newquiz]) newquiz = Math.floor(Math.random() * count);
+        if(corrects[newquiz]) newquiz = Math.floor(Math.random() * count);
+    } while(newquiz === question);
+    console.log("newquiz", locations[newquiz], corrects[newquiz]);
 
-    var newquiz = Math.floor(Math.random() * count);
-    if(newquiz == question || corrects[newquiz]) newquiz = Math.floor(Math.random() * count);
-    if(newquiz == question || corrects[newquiz]) newquiz = Math.floor(Math.random() * count);
-    prev = question;
-
-    $("#score").text(scoretitle + count);
-    $("#score").text("");
     quizvalue = newquiz;
 
     $('#cityname').css('color', ok ? '#44aa44' : '#cc3333');
@@ -245,34 +235,17 @@ function zoomout(fn) {
         'font-size': namesize,
         'width': $(window).width() - namesize
     }, fn); 
-    $('#score').css('position', 'fixed')
-                  .css('color', '#ffffff')
-                  .css('font-size', textsize)
-                  .css('text-align', 'center')
-                  .css('font-family', 'sans-serif')
-                  .css('top', viewheight - textsize)
-                  .css('left', 0)
-                  .css('width', viewwidth)
-                  .css('text-shadow', '0 0 .2ex black');
-
-
-    /*console.log("width" + $(window).width());
-    $('#map')
-        .css('height', $(window).height())
-        .css('width', $(window).width())
-        .css('top', 0)
-        .css('left', 0);
-    zoomedin = false;
-    $('#cityname').text(name).animate({
-        top: Math.round(($(window).height()-$('#cityname').height())/2),
-        opacity: 1,
-        'width': $(window).width() - namesize
-    }); */
 }
 
 function init() {
+    viewwidth = $(window).width();
+    viewheight = $(window).height();
+    corrects = [];
+    for(var i=0;i<count;++i) {
+        corrects[i] = true;
+    }
     shuffle();
-    $('body').html('<img src="denmark.jpg" id=map><div id="cityname"></div><div id="score"></div><div id="locations"></div>');
+    $('body').html('<img src="denmark.jpg" id=map><div id="cityname"></div><div id="locations"></div>');
     var locstr = '';
     for(var i = 0; i < count; ++i) {
         locstr += '<image id="loc' + i + '">'
@@ -288,14 +261,14 @@ function init() {
              ;
     mapDom = $('#map')[0];
     $('#cityname').css('position', 'fixed')
-                  .css('color', '#ffffff')
-                  .css('font-size', namesize)
                   .css('text-align', 'center')
                   .css('font-family', 'sans-serif')
-                  .css('left', namesize/2)
+                  .css('top', -namesize*1.5)
+                  .css('font-size', namesize)
                   .css('width', $(window).width() - namesize)
+                  .html('Danske&nbsp;byer')
                   .css('text-shadow', '0 0 .2ex black');
-     answer(false, 0);
+     answer(true, 0);
 }
 
 function main() {

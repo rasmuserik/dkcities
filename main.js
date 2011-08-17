@@ -7,17 +7,8 @@ var map = 'denmark.jpg'
 // size of image 
 var norm = [1920, 960]
 // locations to quiz
-xlocations = [
-    ['København', 1143, 894],
-    ['Køge', 1057, 997],
-    ['Odense', 597, 1116],
-    ['Ålborg', 488, 392],
-    ['Århus', 561, 760],
-    ['Herning', 250, 850],
-    ['Skagen', 629, 62],
-    ['Vejle', 403, 1013]
-];
-var zoomfactor = 10;
+locsrc = locations;
+var zoomfactor = 3;
 var scoretitle = "Byer: ";
 
 // normalise location position
@@ -40,22 +31,28 @@ var logosz;
 var clickx, clicky, clicktime;
 var namesize = Math.round($(window).width() / 8);
 var textsize = Math.round(namesize / 3);
-var count = 1;
+var count = 7;
 // # Location management
 
-function shuffle() {
-    var t, result = [];
-    while(locations.length > 0) {
-        i = Math.floor(Math.random() * locations.length);
-        result.push(locations[i]);
-        locations[i] = locations[locations.length - 1];
-        locations.pop();
-    }
-    locations = result;
-    console.log(locations);
+function locDist(a, b) {
+    return Math.abs(a[1]-b[1]) + Math.abs(a[2]-b[2]);
 }
 
-// score management
+function shuffle() {
+    var i, j, result = [];
+
+    locations = [];
+    for(i=0;i<count;++i) {
+        var loc = locsrc[Math.floor(Math.random() * locsrc.length)];
+        locations[i] = loc;
+        for(j=0;j<i;++j) {
+            console.log("dist", locDist(loc, locations[j]));
+            if(locDist(loc, locations[j]) < 0.1) {
+                j = --i;
+            }
+        }
+    }
+}
 
 function imbounds() {
     if(imposx > 0) { imposx = 0; }
@@ -66,7 +63,7 @@ function imbounds() {
 
 function downEvent(x,y) {
     if(cursorDown) return; cursorDown = true;
-    console.log("downEvent " +  x + ", " + y);
+
     viewwidth = $(window).width();
     viewheight = $(window).height();
     namesize = Math.round($(window).width() / 8);
@@ -79,35 +76,6 @@ function downEvent(x,y) {
     } else {
         prevx = x;
         prevy = y;
-        //zoomout("blah");
-    }
-}
-
-function newCity(name, ok) {
-    function slidein() {
-        $('#cityname')
-            .text(name)
-            .css('color', 'white')
-            .css('left', viewwidth)
-            .animate({ left: 0 }); 
-    }
-
-    if(ok) {
-        $('#cityname')
-            .animate({
-                top: Math.round(viewheight/2 - namesize),
-                left: - viewwidth,
-                'font-size': namesize,
-                'width': viewwidth
-            }, slidein);
-    } else {
-        $('#cityname')
-            .animate({
-                top: Math.round(viewheight/2 - namesize),
-                left: viewwidth,
-                'font-size': namesize,
-                'width': viewwidth
-            }, slidein);
     }
 }
 
@@ -127,26 +95,68 @@ function upEvent(x,y) {
             (prevx-imposx)/imwidth,
             (prevy-imposy)/imheight);
 
-        ok = result === quizvalue;
+        answer(result === quizvalue, quizvalue);
 
-        count += ok ? 1 : -1;
-        if(count > locations.length) {
-            count = locations.length;
-        }
-
-        var newquiz = Math.floor(Math.random() * count);
-        while(ok && newquiz === quizvalue && count >= 2) {
-            newquiz = Math.floor(Math.random() * count);
-        }
-
-        $("#score").text(scoretitle + count);
-        quizvalue = newquiz;
-
-        $('#cityname').css('color', ok ? '#44aa44' : '#cc3333');
-        
-        zoomout(function() { newCity(locations[quizvalue][0], ok)});
     }
-    console.log("upEvent " +  clickduration + ", " + movement);
+}
+
+var corrects = [];
+var prev;
+
+function answer(ok, question) {
+
+    corrects[question] = ok;
+    var allok = true;
+    for(var i = 0; i < count; ++i) {
+        allok = allok && corrects[i];
+    }
+    if(allok) {
+        shuffle();
+    }
+    
+
+    var newquiz = Math.floor(Math.random() * count);
+    if(newquiz == question || corrects[newquiz]) newquiz = Math.floor(Math.random() * count);
+    if(newquiz == question || corrects[newquiz]) newquiz = Math.floor(Math.random() * count);
+    prev = question;
+
+    $("#score").text(scoretitle + count);
+    $("#score").text("");
+    quizvalue = newquiz;
+
+    $('#cityname').css('color', ok ? '#44aa44' : '#cc3333');
+    
+    zoomout(function() { 
+        function slidein() {
+            $('#cityname')
+                .text(locations[newquiz][0])
+                .css('font-size', namesize)
+                .css('color', 'white')
+                .css('left', viewwidth)
+                .css('width', viewwidth)
+                .css('top', Math.round(viewheight/2 - namesize))
+                .animate({ left: 0 }); 
+        }
+    
+        if(ok) {
+            $('#cityname')
+                .animate({
+                    top: viewheight,
+                    left: 0,
+                    'font-size': namesize*2,
+                    'width': viewwidth
+                }, slidein);
+        } else {
+            console.log(question, locations[question]);
+            $('#cityname')
+                .animate({
+                    top: locations[question][2] * viewheight,
+                    left: locations[question][1] * viewwidth,
+                    'font-size': 0,
+                    'width': 0
+                }, slidein);
+    }
+    });
 }
 
 var locationimgs;
@@ -264,7 +274,7 @@ function init() {
     shuffle();
     $('body').html('<img src="denmark.jpg" id=map><div id="cityname"></div><div id="score"></div><div id="locations"></div>');
     var locstr = '';
-    for(var i = 0; i < locations.length; ++i) {
+    for(var i = 0; i < count; ++i) {
         locstr += '<image id="loc' + i + '">'
     }
     $('#locations').html(locstr);
@@ -285,6 +295,7 @@ function init() {
                   .css('left', namesize/2)
                   .css('width', $(window).width() - namesize)
                   .css('text-shadow', '0 0 .2ex black');
+     answer(false, 0);
 }
 
 function main() {

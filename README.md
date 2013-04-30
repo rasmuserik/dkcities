@@ -1,3 +1,4 @@
+![logo](https://solsort.com/_logo.png)
 Mobile app for practising Danish city names
 
 # Description (for Android Market)
